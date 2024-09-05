@@ -1,11 +1,22 @@
 import streamlit as st
+import scipy.stats as stats
+import statsmodels.api as sm
 import pandas as pd
 
 # Function to display Python code based on the test selected
 def display_python_code(test):
     st.subheader(f"Python code for {test}:")
     
-    if test == 't-test':
+    if test == 'Z-test':
+        st.code("""
+from statsmodels.stats.weightstats import ztest
+
+# Assuming data is in two pandas series: group1 and group2
+z_stat, p_val = ztest(group1, group2)
+print(f'Z-test statistic: {z_stat}, p-value: {p_val}')
+        """)
+    
+    elif test == 't-test':
         st.code("""
 import scipy.stats as stats
 
@@ -66,16 +77,24 @@ hypothesis_type = st.selectbox(
 # User input: number of groups or variables
 if hypothesis_type == 'Comparison of Means':
     num_groups = st.selectbox("How many groups do you have?", [2, 3, 'More than 3'])
+    st.write("Do you know the population standard deviation?")
+    pop_std_dev = st.selectbox("Choose one", ['Yes', 'No'])
+    
     if num_groups == 2:
-        test = 't-test'
+        if pop_std_dev == 'Yes':
+            test = 'Z-test'
+        else:
+            test = 't-test'
     else:
         test = 'ANOVA'
+
 elif hypothesis_type == 'Association Between Variables':
     data_type = st.selectbox("What is the type of your data?", ['Categorical', 'Continuous'])
     if data_type == 'Categorical':
         test = 'Chi-square'
     else:
         test = 'Correlation'
+
 elif hypothesis_type == 'Prediction':
     test = 'Regression'
 
