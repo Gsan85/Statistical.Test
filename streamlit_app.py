@@ -2,154 +2,212 @@ import streamlit as st
 import numpy as np
 import scipy.stats as stats
 import statsmodels.stats.proportion as sm_proportion
-import statsmodels.stats.multicomp as mc
+import statsmodels.api as sm
 
-# Set up the Streamlit app layout
-st.title("Statistical Test Selector App")
-st.write("Select the appropriate test based on the nature of your data and hypothesis.")
+# Title
+st.title("Statistical Test Selector")
 
-# Step 1: Guide through the selection process
-st.subheader("Step 1: What is the nature of your data?")
+# Introduction
+st.write("""
+This app will help you select the appropriate statistical test for your problem, and then generate the Python code for it. 
+Select the appropriate options based on the nature of your data and hypothesis.
+""")
+
+# Step 1: Ask the type of data
+st.subheader("Step 1: What kind of data are you dealing with?")
 data_type = st.selectbox(
-    "What kind of data do you have?",
-    ("One Sample Mean", "Two Sample Means", "Proportions", "Categorical Data")
+    "Choose the type of data you're working with:",
+    ("Compare Means", "Compare Proportions", "Categorical Data", "Correlation/Regression")
 )
 
-# Step 2: Provide explanations and options for the statistical test based on user input
-if data_type == "One Sample Mean":
-    st.write("You are testing a sample mean against a known population mean.")
+# Step 2: Ask details based on the type of data
+
+if data_type == "Compare Means":
+    st.write("You are comparing one or more means.")
     
-    # Ask if the population standard deviation is known
-    std_known = st.radio(
-        "Is the population standard deviation known?",
-        ("Yes", "No")
+    num_groups = st.radio(
+        "How many groups do you have?",
+        ("One", "Two", "Three or more")
     )
     
-    # Explanation
-    if std_known == "Yes":
-        st.write("""
-        **Use a z-test:** The population standard deviation is known, so the z-test is appropriate.
-        - Null Hypothesis (H₀): Sample mean = population mean
-        - Alternative Hypothesis (H₁): Sample mean ≠ population mean (two-tailed) or one-tailed if specified.
-        """)
-        # Sample Data Input
-        sample_data = st.text_area("Enter your sample data (comma-separated):")
-        sample_data = np.array([float(x) for x in sample_data.split(',')])
-        pop_mean = st.number_input("Enter the population mean:", value=0.0)
-        pop_std = st.number_input("Enter the population standard deviation:", value=1.0)
+    if num_groups == "One":
+        st.write("You are testing one sample mean against a known population mean.")
+        std_known = st.radio("Is the population standard deviation known?", ("Yes", "No"))
         
-        # Python code for z-test
-        st.code(f"""
+        if std_known == "Yes":
+            st.write("**Use a Z-test**")
+            st.write("""
+            **Python Code for Z-test:**
+            """)
+            st.code("""
 import numpy as np
 import scipy.stats as stats
 
-sample_data = np.array({sample_data.tolist()})
-pop_mean = {pop_mean}
-pop_std = {pop_std}
+sample_data = np.array([data])  # Replace with your sample data
+pop_mean = population_mean  # Replace with population mean
+pop_std = population_std  # Replace with population standard deviation
 n = len(sample_data)
 z_stat = (np.mean(sample_data) - pop_mean) / (pop_std / np.sqrt(n))
 p_value = 2 * (1 - stats.norm.cdf(abs(z_stat)))
-print(f"Z-statistic: {{z_stat}}, P-value: {{p_value}}")
+print(f"Z-statistic: {z_stat}, P-value: {p_value}")
 """)
-    else:
-        st.write("""
-        **Use a t-test:** The population standard deviation is unknown, so the t-test is appropriate.
-        - Null Hypothesis (H₀): Sample mean = population mean
-        - Alternative Hypothesis (H₁): Sample mean ≠ population mean (two-tailed) or one-tailed if specified.
-        """)
-        # Sample Data Input
-        sample_data = st.text_area("Enter your sample data (comma-separated):")
-        sample_data = np.array([float(x) for x in sample_data.split(',')])
-        pop_mean = st.number_input("Enter the population mean:", value=0.0)
         
-        # Python code for one-sample t-test
+        else:
+            st.write("**Use a one-sample t-test**")
+            st.write("""
+            **Python Code for One-sample t-test:**
+            """)
+            st.code("""
+import numpy as np
+import scipy.stats as stats
+
+sample_data = np.array([data])  # Replace with your sample data
+pop_mean = population_mean  # Replace with population mean
+t_stat, p_value = stats.ttest_1samp(sample_data, pop_mean)
+print(f"T-statistic: {t_stat}, P-value: {p_value}")
+""")
+    
+    elif num_groups == "Two":
+        st.write("You are comparing the means of two independent groups.")
+        equal_var = st.radio("Assume equal variance between the two groups?", ("Yes", "No"))
+        
+        st.write("**Use a two-sample t-test**")
+        st.write("""
+        **Python Code for Two-sample t-test:**
+        """)
         st.code(f"""
 import numpy as np
 import scipy.stats as stats
 
-sample_data = np.array({sample_data.tolist()})
-pop_mean = {pop_mean}
-t_stat, p_value = stats.ttest_1samp(sample_data, pop_mean)
-print(f"T-statistic: {{t_stat}}, P-value: {{p_value}}")
-""")
-
-elif data_type == "Two Sample Means":
-    st.write("You are comparing the means of two independent samples.")
-    
-    # Ask about population standard deviations
-    equal_var = st.radio(
-        "Assume equal variance between the two groups?",
-        ("Yes", "No")
-    )
-    
-    # Explanation
-    st.write("""
-    **Use a two-sample t-test:** This test compares the means of two independent samples.
-    - Null Hypothesis (H₀): Mean of sample 1 = Mean of sample 2
-    - Alternative Hypothesis (H₁): Mean of sample 1 ≠ Mean of sample 2 (two-tailed) or one-tailed if specified.
-    """)
-    
-    # Sample Data Input
-    sample_data1 = st.text_area("Enter sample data for Group 1 (comma-separated):")
-    sample_data2 = st.text_area("Enter sample data for Group 2 (comma-separated):")
-    sample_data1 = np.array([float(x) for x in sample_data1.split(',')])
-    sample_data2 = np.array([float(x) for x in sample_data2.split(',')])
-
-    # Python code for two-sample t-test
-    st.code(f"""
-import numpy as np
-import scipy.stats as stats
-
-sample_data1 = np.array({sample_data1.tolist()})
-sample_data2 = np.array({sample_data2.tolist()})
+sample_data1 = np.array([data1])  # Replace with your first sample data
+sample_data2 = np.array([data2])  # Replace with your second sample data
 t_stat, p_value = stats.ttest_ind(sample_data1, sample_data2, equal_var={equal_var == 'Yes'})
 print(f"T-statistic: {{t_stat}}, P-value: {{p_value}}")
 """)
-
-elif data_type == "Proportions":
-    st.write("You are comparing proportions between groups or testing a single proportion.")
     
-    # Explanation
-    st.write("""
-    **Use a z-test for proportions:** This test compares the proportions of one or two groups.
-    - Null Hypothesis (H₀): The proportions are equal (or the proportion equals a certain value in the one-sample case).
-    - Alternative Hypothesis (H₁): The proportions are not equal (or the proportion does not equal a certain value).
-    """)
-    
-    # Data Input
-    count = st.number_input("Enter the number of successes:", value=0, min_value=0)
-    nobs = st.number_input("Enter the total number of observations:", value=1, min_value=1)
-    
-    # Python code for z-test for proportions
-    st.code(f"""
-import statsmodels.stats.proportion as sm_proportion
-
-count = {count}
-nobs = {nobs}
-z_stat, p_value = sm_proportion.proportions_ztest(count, nobs)
-print(f"Z-statistic: {{z_stat}}, P-value: {{p_value}}")
-""")
-
-elif data_type == "Categorical Data":
-    st.write("You are testing for independence between two categorical variables.")
-    
-    # Explanation
-    st.write("""
-    **Use a Chi-square test of independence:** This test determines if two categorical variables are independent of each other.
-    - Null Hypothesis (H₀): The variables are independent.
-    - Alternative Hypothesis (H₁): The variables are not independent.
-    """)
-    
-    # Data Input
-    observed = st.text_area("Enter the observed frequency table (comma-separated rows):")
-    observed = np.array([list(map(int, row.split(','))) for row in observed.split('\n')])
-    
-    # Python code for Chi-square test
-    st.code(f"""
+    else:
+        st.write("You are comparing the means of three or more groups.")
+        st.write("**Use ANOVA (Analysis of Variance)**")
+        st.write("""
+        **Python Code for One-way ANOVA:**
+        """)
+        st.code("""
 import numpy as np
 import scipy.stats as stats
 
-observed = np.array({observed.tolist()})
-chi2, p_value, _, _ = stats.chi2_contingency(observed)
-print(f"Chi-square statistic: {{chi2}}, P-value: {{p_value}}")
+sample_data1 = np.array([data1])  # Replace with first group data
+sample_data2 = np.array([data2])  # Replace with second group data
+sample_data3 = np.array([data3])  # Replace with third group data
+f_stat, p_value = stats.f_oneway(sample_data1, sample_data2, sample_data3)
+print(f"F-statistic: {f_stat}, P-value: {p_value}")
+""")
+
+elif data_type == "Compare Proportions":
+    st.write("You are comparing proportions.")
+    
+    num_groups = st.radio(
+        "How many groups are you comparing?",
+        ("One", "Two")
+    )
+    
+    if num_groups == "One":
+        st.write("You are testing one proportion against a hypothesized proportion.")
+        st.write("**Use a one-sample z-test for proportions**")
+        st.write("""
+        **Python Code for One-sample Z-test for Proportions:**
+        """)
+        st.code("""
+import statsmodels.stats.proportion as sm_proportion
+
+count = number_of_successes  # Replace with the number of successes
+nobs = total_observations  # Replace with total number of observations
+p_value = sm_proportion.proportions_ztest(count, nobs)
+print(f"Z-statistic: {z_stat}, P-value: {p_value}")
+""")
+    
+    else:
+        st.write("You are comparing proportions between two groups.")
+        st.write("**Use a two-sample z-test for proportions**")
+        st.write("""
+        **Python Code for Two-sample Z-test for Proportions:**
+        """)
+        st.code("""
+import statsmodels.stats.proportion as sm_proportion
+
+count = np.array([successes_group1, successes_group2])
+nobs = np.array([total_obs_group1, total_obs_group2])
+z_stat, p_value = sm_proportion.proportions_ztest(count, nobs)
+print(f"Z-statistic: {z_stat}, P-value: {p_value}")
+""")
+
+elif data_type == "Categorical Data":
+    st.write("You are working with categorical data (e.g., contingency tables).")
+    
+    st.write("**Use a Chi-Square test of independence**")
+    st.write("""
+    **Python Code for Chi-Square Test:**
+    """)
+    st.code("""
+import numpy as np
+import scipy.stats as stats
+
+observed = np.array([[data_row1], [data_row2]])  # Replace with observed data table
+chi2_stat, p_value, dof, expected = stats.chi2_contingency(observed)
+print(f"Chi-square statistic: {chi2_stat}, P-value: {p_value}")
+""")
+
+elif data_type == "Correlation/Regression":
+    st.write("You are dealing with correlation or regression analysis.")
+    
+    corr_type = st.radio(
+        "What kind of relationship are you testing?",
+        ("Correlation", "Linear Regression")
+    )
+    
+    if corr_type == "Correlation":
+        st.write("**Use Pearson or Spearman correlation based on data type**")
+        corr_method = st.radio("Select the correlation method:", ("Pearson (Parametric)", "Spearman (Non-parametric)"))
+        
+        if corr_method == "Pearson (Parametric)":
+            st.write("""
+            **Python Code for Pearson Correlation:**
+            """)
+            st.code("""
+import numpy as np
+import scipy.stats as stats
+
+x = np.array([data_x])  # Replace with data for variable X
+y = np.array([data_y])  # Replace with data for variable Y
+corr, p_value = stats.pearsonr(x, y)
+print(f"Pearson correlation: {corr}, P-value: {p_value}")
+""")
+        
+        else:
+            st.write("""
+            **Python Code for Spearman Correlation:**
+            """)
+            st.code("""
+import numpy as np
+import scipy.stats as stats
+
+x = np.array([data_x])  # Replace with data for variable X
+y = np.array([data_y])  # Replace with data for variable Y
+corr, p_value = stats.spearmanr(x, y)
+print(f"Spearman correlation: {corr}, P-value: {p_value}")
+""")
+    
+    else:
+        st.write("**Use Linear Regression**")
+        st.write("""
+        **Python Code for Linear Regression:**
+        """)
+        st.code("""
+import numpy as np
+import statsmodels.api as sm
+
+X = np.array([data_X])  # Replace with predictor data
+y = np.array([data_y])  # Replace with response data
+X = sm.add_constant(X)  # Add constant term for intercept
+model = sm.OLS(y, X).fit()
+print(model.summary())
 """)
