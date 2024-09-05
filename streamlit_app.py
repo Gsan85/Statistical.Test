@@ -73,7 +73,24 @@ if st.button("Run Test"):
 
     # Step 5: Compare p-value with alpha and display the result
     st.subheader("Test Results")
-    st.write(f"Test Statistic: {t_stat if 't_stat' in locals() else (f_stat if 'f_stat' in locals() else shapiro_stat if 'shapiro_stat' in locals() else chi2 if 'chi2' in locals() else z_stat if 'z_stat' in locals() else levene_stat if 'levene_stat' in locals())}")
+
+    # Corrected version: displaying the test statistic dynamically
+    test_stat = None
+    if 't_stat' in locals():
+        test_stat = t_stat
+    elif 'f_stat' in locals():
+        test_stat = f_stat
+    elif 'shapiro_stat' in locals():
+        test_stat = shapiro_stat
+    elif 'chi2' in locals():
+        test_stat = chi2
+    elif 'z_stat' in locals():
+        test_stat = z_stat
+    elif 'levene_stat' in locals():
+        test_stat = levene_stat
+
+    if test_stat is not None:
+        st.write(f"Test Statistic: {test_stat}")
     st.write(f"P-value: {p_value}")
     
     if p_value < alpha:
