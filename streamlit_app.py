@@ -20,95 +20,85 @@ data_type = st.selectbox(
     ["Continuous", "Proportions", "Categorical"]
 )
 
-# Step 2: Test selection based on data type
+# Additional Options for Distribution Functions
 if data_type == "Continuous":
     st.subheader("You are working with continuous data.")
-    test_scenario = st.selectbox(
-        "Choose your test scenario:",
-        ["One sample mean", "Two sample means", "More than two sample means"]
+    distribution = st.selectbox(
+        "Choose the type of distribution function to calculate:",
+        ["PMF", "PDF", "CDF"]
     )
 
-    if test_scenario == "One sample mean":
-        st.write("**Use a Z-test or t-test depending on the standard deviation knowledge.**")
-        std_known = st.radio("Is the population standard deviation known?", ("Yes", "No"))
-        if std_known == "Yes":
-            st.write("**Z-test** is appropriate when the population standard deviation is known.")
-            st.code("""
-import numpy as np
-import scipy.stats as stats
+    dist_name = st.selectbox(
+        "Choose the distribution:",
+        ["Normal", "Binomial", "Poisson"]
+    )
 
-# Replace with your data
-sample_data = np.array([data])
-pop_mean = population_mean
-pop_std = population_std
-n = len(sample_data)
+    if distribution == "PMF":
+        if dist_name == "Binomial":
+            st.write("**Probability Mass Function (PMF) for Binomial Distribution**")
+            trials = st.number_input("Number of trials", min_value=1, value=10)
+            probability = st.number_input("Probability of success", min_value=0.0, max_value=1.0, value=0.5)
+            k = st.number_input("Number of successes", min_value=0, value=3)
 
-z_stat = (np.mean(sample_data) - pop_mean) / (pop_std / np.sqrt(n))
-p_value = 2 * (1 - stats.norm.cdf(abs(z_stat)))
-print(f"Z-statistic: {z_stat}, P-value: {p_value}")
-""")
-        else:
-            st.write("**t-test** is appropriate when the population standard deviation is unknown.")
-            st.code("""
-import numpy as np
-import scipy.stats as stats
-
-# Replace with your data
-sample_data = np.array([data])
-pop_mean = population_mean
-
-t_stat, p_value = stats.ttest_1samp(sample_data, pop_mean)
-print(f"T-statistic: {t_stat}, P-value: {p_value}")
-""")
-
-    elif test_scenario == "Two sample means":
-        st.write("**Two-sample t-test or z-test** depending on standard deviation knowledge.")
-        std_known = st.radio("Are the population standard deviations known?", ("Yes", "No"))
-        if std_known == "Yes":
-            st.write("**Two-sample z-test** is appropriate when population standard deviations are known.")
-            st.code("""
-import numpy as np
-import scipy.stats as stats
-
-# Replace with your data
-sample_data1 = np.array([data1])
-sample_data2 = np.array([data2])
-pop_std1 = std_dev1
-pop_std2 = std_dev2
-n1, n2 = len(sample_data1), len(sample_data2)
-
-z_stat = (np.mean(sample_data1) - np.mean(sample_data2)) / np.sqrt((pop_std1**2 / n1) + (pop_std2**2 / n2))
-p_value = 2 * (1 - stats.norm.cdf(abs(z_stat)))
-print(f"Z-statistic: {z_stat}, P-value: {p_value}")
-""")
-        else:
-            st.write("**Two-sample t-test** is appropriate when population standard deviations are unknown.")
-            equal_var = st.radio("Do the two groups have equal variances?", ("Yes", "No"))
             st.code(f"""
-import numpy as np
 import scipy.stats as stats
 
-# Replace with your data
-sample_data1 = np.array([data1])
-sample_data2 = np.array([data2])
+trials = {trials}
+probability = {probability}
+k = {k}
 
-t_stat, p_value = stats.ttest_ind(sample_data1, sample_data2, equal_var={equal_var == 'Yes'})
-print(f"T-statistic: {{t_stat}}, P-value: {{p_value}}")
+pmf = stats.binom.pmf(k, trials, probability)
+print(f"PMF: {{pmf}}")
 """)
+        elif dist_name == "Poisson":
+            st.write("**Probability Mass Function (PMF) for Poisson Distribution**")
+            mu = st.number_input("Mean rate (mu)", min_value=0.0, value=2.0)
+            k = st.number_input("Number of events", min_value=0, value=3)
 
-    else:
-        st.write("**ANOVA** is used when comparing the means of more than two groups.")
-        st.code("""
-import numpy as np
+            st.code(f"""
 import scipy.stats as stats
 
-# Replace with your data for multiple groups
-sample_data1 = np.array([data1])
-sample_data2 = np.array([data2])
-sample_data3 = np.array([data3])
+mu = {mu}
+k = {k}
 
-f_stat, p_value = stats.f_oneway(sample_data1, sample_data2, sample_data3)
-print(f"F-statistic: {f_stat}, P-value: {p_value}")
+pmf = stats.poisson.pmf(k, mu)
+print(f"PMF: {{pmf}}")
+""")
+    
+    elif distribution == "PDF":
+        if dist_name == "Normal":
+            st.write("**Probability Density Function (PDF) for Normal Distribution**")
+            mean = st.number_input("Mean", value=0.0)
+            std_dev = st.number_input("Standard deviation", min_value=0.0, value=1.0)
+            x = st.number_input("Value for PDF", value=0.0)
+
+            st.code(f"""
+import scipy.stats as stats
+
+mean = {mean}
+std_dev = {std_dev}
+x = {x}
+
+pdf = stats.norm.pdf(x, mean, std_dev)
+print(f"PDF: {{pdf}}")
+""")
+    
+    elif distribution == "CDF":
+        if dist_name == "Normal":
+            st.write("**Cumulative Distribution Function (CDF) for Normal Distribution**")
+            mean = st.number_input("Mean", value=0.0)
+            std_dev = st.number_input("Standard deviation", min_value=0.0, value=1.0)
+            x = st.number_input("Value for CDF", value=0.0)
+
+            st.code(f"""
+import scipy.stats as stats
+
+mean = {mean}
+std_dev = {std_dev}
+x = {x}
+
+cdf = stats.norm.cdf(x, mean, std_dev)
+print(f"CDF: {{cdf}}")
 """)
 
 elif data_type == "Proportions":
@@ -125,7 +115,7 @@ import statsmodels.stats.proportion as sm_proportion
 
 count = number_of_successes  # Replace with your data
 nobs = total_observations
-p_value = sm_proportion.proportions_ztest(count, nobs)
+z_stat, p_value = sm_proportion.proportions_ztest(count, nobs)
 print(f"Z-statistic: {z_stat}, P-value: {p_value}")
 """)
     else:
