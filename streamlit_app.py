@@ -1,202 +1,155 @@
 import streamlit as st
 import numpy as np
-import pandas as pd
-from scipy import stats
-import statsmodels.stats.proportion as smprop
+import scipy.stats as stats
+import statsmodels.stats.proportion as sm_proportion
+import statsmodels.stats.multicomp as mc
 
-def main():
-    st.title("Statistical Test Selector and Calculator")
+# Set up the Streamlit app layout
+st.title("Statistical Test Selector App")
+st.write("Select the appropriate test based on the nature of your data and hypothesis.")
 
-    # Step 1: Determine the type of data and research question
-    test_type = st.selectbox(
-        "What type of test do you want to perform?",
-        ["Test for one mean", "Test for equality of means", "Test for one proportion", 
-         "Test for equality of proportions", "Test of independence", "Analysis of Variance (ANOVA)"]
+# Step 1: Guide through the selection process
+st.subheader("Step 1: What is the nature of your data?")
+data_type = st.selectbox(
+    "What kind of data do you have?",
+    ("One Sample Mean", "Two Sample Means", "Proportions", "Categorical Data")
+)
+
+# Step 2: Provide explanations and options for the statistical test based on user input
+if data_type == "One Sample Mean":
+    st.write("You are testing a sample mean against a known population mean.")
+    
+    # Ask if the population standard deviation is known
+    std_known = st.radio(
+        "Is the population standard deviation known?",
+        ("Yes", "No")
     )
-
-    # Step 2: Select the appropriate test
-    if test_type == "Test for one mean":
-        perform_one_sample_ttest()
-    elif test_type == "Test for equality of means":
-        perform_two_sample_ttest()
-    elif test_type == "Test for one proportion":
-        perform_one_sample_proportion_test()
-    elif test_type == "Test for equality of proportions":
-        perform_two_sample_proportion_test()
-    elif test_type == "Test of independence":
-        perform_chi_square_test()
-    elif test_type == "Analysis of Variance (ANOVA)":
-        perform_anova()
-
-def perform_one_sample_ttest():
-    st.subheader("One-Sample T-Test")
-
-    # Step 3: Formulate hypotheses
-    st.write("Null Hypothesis (H0): The sample mean is equal to the population mean.")
-    st.write("Alternative Hypothesis (H1): The sample mean is not equal to the population mean.")
-
-    # Step 4: Set significance level
-    alpha = st.number_input("Enter the significance level (alpha)", min_value=0.01, max_value=0.1, value=0.05, step=0.01)
-
-    # Step 5: Collect data
-    data = st.text_input("Enter the sample data (comma-separated values)")
-    pop_mean = st.number_input("Enter the population mean")
-
-    if st.button("Perform Test"):
-        # Step 6: Perform the test
-        if data:
-            sample = np.array([float(x.strip()) for x in data.split(',')])
-            t_statistic, p_value = stats.ttest_1samp(sample, pop_mean)
-
-            # Step 7: Compare p-value and draw conclusion
-            st.write(f"T-statistic: {t_statistic}")
-            st.write(f"P-value: {p_value}")
-            
-            if p_value < alpha:
-                st.write("Conclusion: Reject the null hypothesis.")
-                st.write("There is significant evidence to suggest that the sample mean is different from the population mean.")
-            else:
-                st.write("Conclusion: Fail to reject the null hypothesis.")
-                st.write("There is not enough evidence to suggest that the sample mean is different from the population mean.")
-
-def perform_two_sample_ttest():
-    st.subheader("Two-Sample T-Test")
-
-    st.write("Null Hypothesis (H0): The means of the two populations are equal.")
-    st.write("Alternative Hypothesis (H1): The means of the two populations are not equal.")
-
-    alpha = st.number_input("Enter the significance level (alpha)", min_value=0.01, max_value=0.1, value=0.05, step=0.01)
-
-    data1 = st.text_input("Enter the first sample data (comma-separated values)")
-    data2 = st.text_input("Enter the second sample data (comma-separated values)")
-
-    if st.button("Perform Test"):
-        if data1 and data2:
-            sample1 = np.array([float(x.strip()) for x in data1.split(',')])
-            sample2 = np.array([float(x.strip()) for x in data2.split(',')])
-            t_statistic, p_value = stats.ttest_ind(sample1, sample2)
-
-            st.write(f"T-statistic: {t_statistic}")
-            st.write(f"P-value: {p_value}")
-            
-            if p_value < alpha:
-                st.write("Conclusion: Reject the null hypothesis.")
-                st.write("There is significant evidence to suggest that the means of the two populations are different.")
-            else:
-                st.write("Conclusion: Fail to reject the null hypothesis.")
-                st.write("There is not enough evidence to suggest that the means of the two populations are different.")
-
-def perform_one_sample_proportion_test():
-    st.subheader("One-Sample Proportion Test")
-
-    st.write("Null Hypothesis (H0): The sample proportion is equal to the hypothesized population proportion.")
-    st.write("Alternative Hypothesis (H1): The sample proportion is not equal to the hypothesized population proportion.")
-
-    alpha = st.number_input("Enter the significance level (alpha)", min_value=0.01, max_value=0.1, value=0.05, step=0.01)
-
-    count = st.number_input("Enter the number of successes", min_value=0, step=1)
-    nobs = st.number_input("Enter the total number of observations", min_value=1, step=1)
-    value = st.number_input("Enter the hypothesized population proportion", min_value=0.0, max_value=1.0, value=0.5, step=0.01)
-
-    if st.button("Perform Test"):
-        z_statistic, p_value = smprop.proportions_ztest(count, nobs, value)
-
-        st.write(f"Z-statistic: {z_statistic}")
-        st.write(f"P-value: {p_value}")
+    
+    # Explanation
+    if std_known == "Yes":
+        st.write("""
+        **Use a z-test:** The population standard deviation is known, so the z-test is appropriate.
+        - Null Hypothesis (H₀): Sample mean = population mean
+        - Alternative Hypothesis (H₁): Sample mean ≠ population mean (two-tailed) or one-tailed if specified.
+        """)
+        # Sample Data Input
+        sample_data = st.text_area("Enter your sample data (comma-separated):")
+        sample_data = np.array([float(x) for x in sample_data.split(',')])
+        pop_mean = st.number_input("Enter the population mean:", value=0.0)
+        pop_std = st.number_input("Enter the population standard deviation:", value=1.0)
         
-        if p_value < alpha:
-            st.write("Conclusion: Reject the null hypothesis.")
-            st.write("There is significant evidence to suggest that the sample proportion is different from the hypothesized population proportion.")
-        else:
-            st.write("Conclusion: Fail to reject the null hypothesis.")
-            st.write("There is not enough evidence to suggest that the sample proportion is different from the hypothesized population proportion.")
+        # Python code for z-test
+        st.code(f"""
+import numpy as np
+import scipy.stats as stats
 
-def perform_two_sample_proportion_test():
-    st.subheader("Two-Sample Proportion Test")
-
-    st.write("Null Hypothesis (H0): The proportions in the two populations are equal.")
-    st.write("Alternative Hypothesis (H1): The proportions in the two populations are not equal.")
-
-    alpha = st.number_input("Enter the significance level (alpha)", min_value=0.01, max_value=0.1, value=0.05, step=0.01)
-
-    count1 = st.number_input("Enter the number of successes in sample 1", min_value=0, step=1)
-    nobs1 = st.number_input("Enter the total number of observations in sample 1", min_value=1, step=1)
-    count2 = st.number_input("Enter the number of successes in sample 2", min_value=0, step=1)
-    nobs2 = st.number_input("Enter the total number of observations in sample 2", min_value=1, step=1)
-
-    if st.button("Perform Test"):
-        z_statistic, p_value = smprop.proportions_ztest([count1, count2], [nobs1, nobs2])
-
-        st.write(f"Z-statistic: {z_statistic}")
-        st.write(f"P-value: {p_value}")
+sample_data = np.array({sample_data.tolist()})
+pop_mean = {pop_mean}
+pop_std = {pop_std}
+n = len(sample_data)
+z_stat = (np.mean(sample_data) - pop_mean) / (pop_std / np.sqrt(n))
+p_value = 2 * (1 - stats.norm.cdf(abs(z_stat)))
+print(f"Z-statistic: {{z_stat}}, P-value: {{p_value}}")
+""")
+    else:
+        st.write("""
+        **Use a t-test:** The population standard deviation is unknown, so the t-test is appropriate.
+        - Null Hypothesis (H₀): Sample mean = population mean
+        - Alternative Hypothesis (H₁): Sample mean ≠ population mean (two-tailed) or one-tailed if specified.
+        """)
+        # Sample Data Input
+        sample_data = st.text_area("Enter your sample data (comma-separated):")
+        sample_data = np.array([float(x) for x in sample_data.split(',')])
+        pop_mean = st.number_input("Enter the population mean:", value=0.0)
         
-        if p_value < alpha:
-            st.write("Conclusion: Reject the null hypothesis.")
-            st.write("There is significant evidence to suggest that the proportions in the two populations are different.")
-        else:
-            st.write("Conclusion: Fail to reject the null hypothesis.")
-            st.write("There is not enough evidence to suggest that the proportions in the two populations are different.")
+        # Python code for one-sample t-test
+        st.code(f"""
+import numpy as np
+import scipy.stats as stats
 
-def perform_chi_square_test():
-    st.subheader("Chi-Square Test of Independence")
+sample_data = np.array({sample_data.tolist()})
+pop_mean = {pop_mean}
+t_stat, p_value = stats.ttest_1samp(sample_data, pop_mean)
+print(f"T-statistic: {{t_stat}}, P-value: {{p_value}}")
+""")
 
-    st.write("Null Hypothesis (H0): There is no association between the two categorical variables.")
-    st.write("Alternative Hypothesis (H1): There is an association between the two categorical variables.")
+elif data_type == "Two Sample Means":
+    st.write("You are comparing the means of two independent samples.")
+    
+    # Ask about population standard deviations
+    equal_var = st.radio(
+        "Assume equal variance between the two groups?",
+        ("Yes", "No")
+    )
+    
+    # Explanation
+    st.write("""
+    **Use a two-sample t-test:** This test compares the means of two independent samples.
+    - Null Hypothesis (H₀): Mean of sample 1 = Mean of sample 2
+    - Alternative Hypothesis (H₁): Mean of sample 1 ≠ Mean of sample 2 (two-tailed) or one-tailed if specified.
+    """)
+    
+    # Sample Data Input
+    sample_data1 = st.text_area("Enter sample data for Group 1 (comma-separated):")
+    sample_data2 = st.text_area("Enter sample data for Group 2 (comma-separated):")
+    sample_data1 = np.array([float(x) for x in sample_data1.split(',')])
+    sample_data2 = np.array([float(x) for x in sample_data2.split(',')])
 
-    alpha = st.number_input("Enter the significance level (alpha)", min_value=0.01, max_value=0.1, value=0.05, step=0.01)
+    # Python code for two-sample t-test
+    st.code(f"""
+import numpy as np
+import scipy.stats as stats
 
-    st.write("Enter the contingency table data:")
-    rows = st.number_input("Number of rows", min_value=2, value=2, step=1)
-    cols = st.number_input("Number of columns", min_value=2, value=2, step=1)
+sample_data1 = np.array({sample_data1.tolist()})
+sample_data2 = np.array({sample_data2.tolist()})
+t_stat, p_value = stats.ttest_ind(sample_data1, sample_data2, equal_var={equal_var == 'Yes'})
+print(f"T-statistic: {{t_stat}}, P-value: {{p_value}}")
+""")
 
-    data = []
-    for i in range(rows):
-        row = st.text_input(f"Enter data for row {i+1} (comma-separated values)")
-        if row:
-            data.append([int(x.strip()) for x in row.split(',')])
+elif data_type == "Proportions":
+    st.write("You are comparing proportions between groups or testing a single proportion.")
+    
+    # Explanation
+    st.write("""
+    **Use a z-test for proportions:** This test compares the proportions of one or two groups.
+    - Null Hypothesis (H₀): The proportions are equal (or the proportion equals a certain value in the one-sample case).
+    - Alternative Hypothesis (H₁): The proportions are not equal (or the proportion does not equal a certain value).
+    """)
+    
+    # Data Input
+    count = st.number_input("Enter the number of successes:", value=0, min_value=0)
+    nobs = st.number_input("Enter the total number of observations:", value=1, min_value=1)
+    
+    # Python code for z-test for proportions
+    st.code(f"""
+import statsmodels.stats.proportion as sm_proportion
 
-    if st.button("Perform Test") and len(data) == rows:
-        chi2, p_value, dof, expected = stats.chi2_contingency(data)
+count = {count}
+nobs = {nobs}
+z_stat, p_value = sm_proportion.proportions_ztest(count, nobs)
+print(f"Z-statistic: {{z_stat}}, P-value: {{p_value}}")
+""")
 
-        st.write(f"Chi-square statistic: {chi2}")
-        st.write(f"P-value: {p_value}")
-        st.write(f"Degrees of freedom: {dof}")
-        
-        if p_value < alpha:
-            st.write("Conclusion: Reject the null hypothesis.")
-            st.write("There is significant evidence to suggest an association between the two categorical variables.")
-        else:
-            st.write("Conclusion: Fail to reject the null hypothesis.")
-            st.write("There is not enough evidence to suggest an association between the two categorical variables.")
+elif data_type == "Categorical Data":
+    st.write("You are testing for independence between two categorical variables.")
+    
+    # Explanation
+    st.write("""
+    **Use a Chi-square test of independence:** This test determines if two categorical variables are independent of each other.
+    - Null Hypothesis (H₀): The variables are independent.
+    - Alternative Hypothesis (H₁): The variables are not independent.
+    """)
+    
+    # Data Input
+    observed = st.text_area("Enter the observed frequency table (comma-separated rows):")
+    observed = np.array([list(map(int, row.split(','))) for row in observed.split('\n')])
+    
+    # Python code for Chi-square test
+    st.code(f"""
+import numpy as np
+import scipy.stats as stats
 
-def perform_anova():
-    st.subheader("One-Way ANOVA")
-
-    st.write("Null Hypothesis (H0): The means of all groups are equal.")
-    st.write("Alternative Hypothesis (H1): At least one group mean is different from the others.")
-
-    alpha = st.number_input("Enter the significance level (alpha)", min_value=0.01, max_value=0.1, value=0.05, step=0.01)
-
-    num_groups = st.number_input("Enter the number of groups", min_value=2, value=3, step=1)
-
-    groups = []
-    for i in range(num_groups):
-        group = st.text_input(f"Enter data for group {i+1} (comma-separated values)")
-        if group:
-            groups.append([float(x.strip()) for x in group.split(',')])
-
-    if st.button("Perform Test") and len(groups) == num_groups:
-        f_statistic, p_value = stats.f_oneway(*groups)
-
-        st.write(f"F-statistic: {f_statistic}")
-        st.write(f"P-value: {p_value}")
-        
-        if p_value < alpha:
-            st.write("Conclusion: Reject the null hypothesis.")
-            st.write("There is significant evidence to suggest that at least one group mean is different from the others.")
-        else:
-            st.write("Conclusion: Fail to reject the null hypothesis.")
-            st.write("There is not enough evidence to suggest that any group mean is different from the others.")
-
-if __name__ == "__main__":
-    main()
+observed = np.array({observed.tolist()})
+chi2, p_value, _, _ = stats.chi2_contingency(observed)
+print(f"Chi-square statistic: {{chi2}}, P-value: {{p_value}}")
+""")
