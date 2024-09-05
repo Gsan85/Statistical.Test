@@ -1,3 +1,4 @@
+pip install scipy statsmodels pandas streamlit
 import streamlit as st
 import scipy.stats as stats
 import statsmodels.api as sm
